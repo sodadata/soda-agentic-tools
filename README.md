@@ -23,36 +23,42 @@ Identical to `soda-mcp`, plus the Claude Code CLI:
 - A Soda Cloud API key (`SODA_API_KEY_ID` / `SODA_API_KEY_SECRET`) — create
   one in the Soda Cloud UI under your avatar → **Profile** → **API Keys** →
   **+** ([docs](https://docs.soda.io/reference/soda-apis/generate-api-keys))
-- `UV_INDEX` exported for your license and region:
+- Access to Soda's private PyPI index for your license and region:
 
 | License | Region | Index |
 | --- | --- | --- |
-| Team | EU | `https://team.pypi.cloud.soda.io` |
-| Team | US | `https://team.pypi.us.soda.io` |
-| Enterprise | EU | `https://enterprise.pypi.cloud.soda.io` |
-| Enterprise | US | `https://enterprise.pypi.us.soda.io` |
-
-```bash
-export UV_INDEX="https://${SODA_API_KEY_ID}:${SODA_API_KEY_SECRET}@team.pypi.cloud.soda.io"
-```
+| Team | EU | `team.pypi.cloud.soda.io` |
+| Team | US | `team.pypi.us.soda.io` |
+| Enterprise | EU | `enterprise.pypi.cloud.soda.io` |
+| Enterprise | US | `enterprise.pypi.us.soda.io` |
 
 The Soda skills work together with the `soda-mcp` server — set that up too
 (see the soda-mcp install docs).
 
 ## Install
 
+The full sequence:
+
 ```bash
+# One-time: private index access with the API key embedded — same setup as
+# soda-mcp; pick your index from the table above (best placed in your shell
+# profile so every session has it)
+export UV_INDEX="https://<SODA_API_KEY_ID>:<SODA_API_KEY_SECRET>@team.pypi.cloud.soda.io"
+
 claude plugin marketplace add sodadata/soda-claude-marketplace
-```
 
-```bash
 claude plugin install soda-installer@soda-claude-marketplace
+
+# The first claude start with the installer plugin triggers the Soda plugin
+# installation — a restart is needed after it.
+claude
+
+# Subsequent sessions have the Soda skills (/rca, /create-incident) installed.
+claude
 ```
 
-That's it. On the next session start the Soda plugin is installed
-automatically (or run `/soda-installer:install` to do it right away). From
-then on, a throttled (daily) session-start check keeps it up to date; new
-versions apply to the next session.
+From then on, a throttled (daily) session-start check keeps the plugin up to
+date; new versions apply to the next session.
 
 Everything installs at the **user level**, never in a project folder: the
 marketplace registration and plugin installs land in your Claude Code config
