@@ -20,7 +20,9 @@ Identical to `soda-mcp`, plus the Claude Code CLI:
 - [Claude Code](https://claude.com/claude-code) — the `claude` CLI, installed
   and logged in ([install instructions](https://docs.claude.com/en/docs/claude-code/setup))
 - [`uv`](https://docs.astral.sh/uv/getting-started/installation/) on PATH
-- A Soda Cloud API key (`SODA_API_KEY_ID` / `SODA_API_KEY_SECRET`)
+- A Soda Cloud API key (`SODA_API_KEY_ID` / `SODA_API_KEY_SECRET`) — create
+  one in the Soda Cloud UI under your avatar → **Profile** → **API Keys** →
+  **+** ([docs](https://docs.soda.io/reference/soda-apis/generate-api-keys))
 - `UV_INDEX` exported for your license and region:
 
 | License | Region | Index |
