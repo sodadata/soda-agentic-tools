@@ -15,8 +15,10 @@ from Soda's private package index. Everything that runs on your machine is in
 
 ## Prerequisites
 
-Identical to `soda-mcp`:
+Identical to `soda-mcp`, plus the Claude Code CLI:
 
+- [Claude Code](https://claude.com/claude-code) — the `claude` CLI, installed
+  and logged in ([install instructions](https://docs.claude.com/en/docs/claude-code/setup))
 - [`uv`](https://docs.astral.sh/uv/getting-started/installation/) on PATH
 - A Soda Cloud API key (`SODA_API_KEY_ID` / `SODA_API_KEY_SECRET`)
 - `UV_INDEX` exported for your license and region:
