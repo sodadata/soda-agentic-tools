@@ -49,17 +49,17 @@ claude plugin marketplace add sodadata/soda-claude-marketplace
 claude plugin install soda-installer@soda-claude-marketplace
 ```
 
+That's it. On the next session start the Soda plugin is installed
+automatically (or run `/soda-installer:install` to do it right away). From
+then on, a throttled (daily) session-start check keeps it up to date; new
+versions apply to the next session.
+
 Everything installs at the **user level**, never in a project folder: the
 marketplace registration and plugin installs land in your Claude Code config
 (`~/.claude`), and the Soda plugin content itself is unpacked to
 `~/.soda/claude-plugins/soda`. Run the two commands from any directory — the
 skills are then available in every project and session on this machine, and
 nothing is written into your repos.
-
-That's it. On the next session start the Soda plugin is installed
-automatically (or run `/soda-installer:install` to do it right away). From
-then on, a throttled (daily) session-start check keeps it up to date; new
-versions apply to the next session.
 
 ## Troubleshooting
 
