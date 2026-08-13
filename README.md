@@ -71,29 +71,23 @@ nothing is written into your repos.
 <details>
 <summary>Manual install (no agent involved)</summary>
 
-The same result, by hand, using the same auditable
-[`install.sh`](install.sh) the agent runs — download it once, run it twice:
+One line, from any directory, using the same auditable
+[`install.sh`](install.sh) the agent runs:
 
 ```bash
-curl -fsSL --create-dirs -o ~/.soda/install.sh \
-  https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh
-
-# First run creates ~/.soda/soda-credentials.env and stops for you to edit it
-bash ~/.soda/install.sh
-
-# ... edit ~/.soda/soda-credentials.env (API key + region/license hosts) ...
-
-# Second run installs everything: marketplace, installer plugin, the Soda
-# plugin from your private index, and soda-mcp (only if absent)
-bash ~/.soda/install.sh
-
-# One start — the skills (/rca, /create-incident) and soda-mcp are available
-claude
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh)"
 ```
 
-The script is idempotent — re-run it any time to repair an install. If you
-already created the credentials file in step 1 above, the first run installs
-directly. The private PyPI index hosts, for reference:
+The script checks prerequisites, creates `~/.soda/soda-credentials.env` on
+first use and **pauses while you edit it** (API key + region/license hosts —
+the file documents every choice), installs everything — marketplace,
+installer plugin, the Soda plugin from your private index, `soda-mcp` only
+if absent — and finishes by **launching `claude`** with the skills
+available.
+
+It is idempotent and keeps a copy at `~/.soda/install.sh`: re-run
+`bash ~/.soda/install.sh` any time to repair an install. The private PyPI
+index hosts, for reference:
 
 | License | Region | Index |
 | --- | --- | --- |

@@ -19,14 +19,16 @@ user to paste credentials into the chat.
    bash ~/.soda/install.sh
    ```
 
+   When run by you the script is non-interactive: it never pauses for input
+   and never launches claude itself.
+
 3. Interpret the outcome for the user:
-   - **"Created ~/.soda/soda-credentials.env … edit it"** — the user hasn't
-     prepared credentials yet. Ask them to edit that file themselves (API
-     key: Soda Cloud → avatar → Profile → API Keys → +; the region/license
-     hosts are documented in the file), then repeat step 2. Do not edit the
-     file for them.
-   - **"still contains placeholder values"** — same: ask the user to edit
-     the file, then repeat step 2.
+   - **"still contains placeholder values"** (possibly right after "Created
+     ~/.soda/soda-credentials.env") — the user hasn't prepared credentials
+     yet. Ask them to edit that file themselves (API key: Soda Cloud →
+     avatar → Profile → API Keys → +; the region/license hosts are
+     documented in the file), then repeat step 2. Do not edit the file for
+     them.
    - **uv or claude missing** — relay the install link the script printed
      and stop.
    - **401/403 or resolution error** — the API key or `SODA_PYPI_HOST`
