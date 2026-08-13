@@ -14,9 +14,9 @@ the credentials file or any of its values.
        `https://$SODA_API_KEY_ID:$SODA_API_KEY_SECRET@team.pypi.cloud.soda.io`
        (indexes: `team.pypi.cloud.soda.io`, `team.pypi.us.soda.io`,
        `enterprise.pypi.cloud.soda.io`, `enterprise.pypi.us.soda.io`), or
-     - The credentials file `~/.soda/soda-credentials.env` (see the Soda
+     - The credentials file `~/.soda/claude/soda-credentials.env` (see the Soda
        plugin install docs), edited — if
-       `grep -q '<your-' ~/.soda/soda-credentials.env` exits 0 the file
+       `grep -q '<your-' ~/.soda/claude/soda-credentials.env` exits 0 the file
        still has placeholders.
    - If neither is available, stop and tell the user what to set up — the
      credentials and index are the same ones used for `soda-mcp`; point them
@@ -32,7 +32,7 @@ the credentials file or any of its values.
    never source or print it):
 
    ```bash
-   UV_INDEX="https://$(sed -n 's/[[:space:]]*$//;s/^SODA_API_KEY_ID=//p' ~/.soda/soda-credentials.env | tail -1):$(sed -n 's/[[:space:]]*$//;s/^SODA_API_KEY_SECRET=//p' ~/.soda/soda-credentials.env | tail -1)@$(sed -n 's/[[:space:]]*$//;s/^SODA_PYPI_HOST=//p' ~/.soda/soda-credentials.env | tail -1)" \
+   UV_INDEX="https://$(sed -n 's/[[:space:]]*$//;s/^SODA_API_KEY_ID=//p' ~/.soda/claude/soda-credentials.env | tail -1):$(sed -n 's/[[:space:]]*$//;s/^SODA_API_KEY_SECRET=//p' ~/.soda/claude/soda-credentials.env | tail -1)@$(sed -n 's/[[:space:]]*$//;s/^SODA_PYPI_HOST=//p' ~/.soda/claude/soda-credentials.env | tail -1)" \
      uvx -qq --no-progress soda-plugin@latest install
    ```
 

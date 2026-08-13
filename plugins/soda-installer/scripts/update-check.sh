@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SessionStart update check for the Soda plugin (package soda-plugin on
 # Soda's private PyPI, entitled by your Soda Cloud API key via UV_INDEX —
-# taken from the environment, or derived from ~/.soda/soda-credentials.env).
+# taken from the environment, or derived from ~/.soda/claude/soda-credentials.env).
 #
 # Contract, in priority order:
 #   1. Never block or break session start: every path exits 0, quickly.
@@ -17,7 +17,7 @@
 BASE="$HOME/.soda/claude-plugins"
 STAMP="$BASE/.soda-plugin-last-check"
 INSTALLED="$BASE/soda/.installed-version"
-CREDS="$HOME/.soda/soda-credentials.env"
+CREDS="$HOME/.soda/claude/soda-credentials.env"
 
 main() {
   command -v uv >/dev/null 2>&1 || return 0
@@ -49,7 +49,7 @@ main() {
 
   if [ ! -f "$INSTALLED" ]; then
     if [ -z "${UV_INDEX:-}" ]; then
-      echo "Soda plugin not installed: create ~/.soda/soda-credentials.env or set UV_INDEX (see the Soda plugin install docs), then run /soda-installer:install." >&2
+      echo "Soda plugin not installed: create ~/.soda/claude/soda-credentials.env or set UV_INDEX (see the Soda plugin install docs), then run /soda-installer:install." >&2
       return 0
     fi
     echo "Installing the Soda plugin..." >&2

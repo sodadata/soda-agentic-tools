@@ -33,7 +33,7 @@ Two options, same result: the Soda skills and the
 [`soda-mcp`](https://github.com/sodadata/soda-mcp) server installed at the
 **user level** — your Claude Code config (`~/.claude`), the plugin content
 under `~/.soda/claude-plugins/soda`, your credentials only in
-`~/.soda/soda-credentials.env`; nothing is ever written into your repos.
+`~/.soda/claude/soda-credentials.env`; nothing is ever written into your repos.
 Both options run the same auditable [`install.sh`](install.sh), and a
 throttled (daily) session-start check keeps the plugin up to date
 afterwards.
@@ -62,14 +62,14 @@ One line, from any directory:
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh)"
 ```
 
-The script checks prerequisites, creates `~/.soda/soda-credentials.env` on
+The script checks prerequisites, creates `~/.soda/claude/soda-credentials.env` on
 first use and **pauses while you edit it** (API key + region/license hosts —
 the file documents every choice), installs everything — marketplace,
 installer plugin, the Soda plugin from your private index, `soda-mcp` only
 if absent — and finishes by **launching `claude`** with the skills
 available.
 
-The script is idempotent and keeps a copy at `~/.soda/install.sh` — re-run
+The script is idempotent and keeps a copy at `~/.soda/claude/install.sh` — re-run
 it any time to repair an install. The private PyPI index hosts, for
 reference:
 
@@ -83,20 +83,20 @@ reference:
 ## Troubleshooting
 
 - **Resolution error / 401 / 403 from the index** — the API key is revoked
-  or not entitled, or `SODA_PYPI_HOST` in `~/.soda/soda-credentials.env` is
+  or not entitled, or `SODA_PYPI_HOST` in `~/.soda/claude/soda-credentials.env` is
   wrong for your license/region. Verify the key in Soda Cloud.
 - **Nothing installs at session start** — check that `uv` is on PATH and
-  that `~/.soda/soda-credentials.env` exists and is edited (or that
+  that `~/.soda/claude/soda-credentials.env` exists and is edited (or that
   `UV_INDEX` is exported in the environment Claude Code starts from).
-- **Rotating an API key** — edit `~/.soda/soda-credentials.env`, run
-  `claude mcp remove soda-mcp`, then `bash ~/.soda/install.sh`: it
+- **Rotating an API key** — edit `~/.soda/claude/soda-credentials.env`, run
+  `claude mcp remove soda-mcp`, then `bash ~/.soda/claude/install.sh`: it
   re-registers `soda-mcp` with the new key (an existing registration is
   otherwise left untouched), and the plugin's session-start check picks the
   new key up automatically.
 - **Repair / manual update at any time** — re-run the idempotent installer:
 
   ```bash
-  bash ~/.soda/install.sh
+  bash ~/.soda/claude/install.sh
   ```
 
 ## Installation notes for Claude
@@ -108,19 +108,19 @@ repository. Follow it exactly.
 The entire installation is performed by the public, auditable
 [`install.sh`](install.sh) — your job is to download it, run it, and relay
 the outcome. Never print the user's credentials file
-(`~/.soda/soda-credentials.env`) or any of its values, and never ask the
+(`~/.soda/claude/soda-credentials.env`) or any of its values, and never ask the
 user to paste credentials into the chat.
 
 1. Download the installer — run exactly:
 
    ```bash
-   curl -fsSL --create-dirs -o ~/.soda/install.sh https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh
+   curl -fsSL --create-dirs -o ~/.soda/claude/install.sh https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh
    ```
 
 2. Run it **non-interactively** — run exactly:
 
    ```bash
-   SODA_INSTALL_NONINTERACTIVE=1 bash ~/.soda/install.sh
+   SODA_INSTALL_NONINTERACTIVE=1 bash ~/.soda/claude/install.sh
    ```
 
    The variable stops the script from pausing for keyboard input and from
@@ -131,7 +131,7 @@ user to paste credentials into the chat.
 
 3. Interpret the outcome for the user:
    - **"still contains placeholder values"** (possibly right after "Created
-     ~/.soda/soda-credentials.env") — the user hasn't prepared credentials
+     ~/.soda/claude/soda-credentials.env") — the user hasn't prepared credentials
      yet. Ask them to edit that file themselves (API key: Soda Cloud →
      avatar → Profile → API Keys → +; the region/license hosts are
      documented in the file), then repeat step 2. Do not edit the file for

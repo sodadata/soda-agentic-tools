@@ -14,7 +14,7 @@
 #
 # Idempotent: safe to re-run at any time — it is also the repair tool, and
 # (after `claude mcp remove soda-mcp`) the key-rotation tool. A copy is kept
-# at ~/.soda/install.sh for those later runs.
+# at ~/.soda/claude/install.sh for those later runs.
 #
 # Like the session-start hook in this repo, this script is deliberately
 # short and boring so you can audit it before running. The credentials file
@@ -23,8 +23,8 @@
 set -euo pipefail
 
 BASE_URL="https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main"
-CREDS="$HOME/.soda/soda-credentials.env"
-SELF="$HOME/.soda/install.sh"
+CREDS="$HOME/.soda/claude/soda-credentials.env"
+SELF="$HOME/.soda/claude/install.sh"
 
 say()  { printf '%s\n' "$*"; }
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
@@ -58,7 +58,7 @@ case "$auth" in
     say "   login happens the first time claude starts." ;;
 esac
 
-mkdir -p "$HOME/.soda" && chmod 700 "$HOME/.soda"
+mkdir -p "$HOME/.soda/claude" && chmod 700 "$HOME/.soda" "$HOME/.soda/claude"
 
 # Keep a copy of this script for later repair/rotation runs (the one-liner
 # leaves no file behind).
@@ -140,7 +140,7 @@ fi
 say ""
 if [ "$INTERACTIVE" = "1" ]; then
   say "Done — starting claude. The /rca and /create-incident skills and the"
-  say "soda-mcp server are available. (Re-run ~/.soda/install.sh any time to"
+  say "soda-mcp server are available. (Re-run ~/.soda/claude/install.sh any time to"
   say "repair the install.)"
   say ""
   exec claude
