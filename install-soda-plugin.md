@@ -1,67 +1,40 @@
 # Install the Soda plugin (instructions for Claude Code)
 
-You are installing the Soda plugin and the soda-mcp server for a user who
-has prepared their credentials in `~/.soda/soda-credentials.env`. Follow
-these steps exactly. Never print the credentials file or any of its values —
-check the file only via exit codes, and pass values only through the exact
-command substitutions written below.
+You are installing the Soda plugin and the soda-mcp server for a user. The
+entire installation is performed by the public, auditable installer script
+from this repository — your job is to download it, run it, and relay the
+outcome. Never print the user's credentials file
+(`~/.soda/soda-credentials.env`) or any of its values, and never ask the
+user to paste credentials into the chat.
 
-1. Prerequisites:
-   - `uvx --version` succeeds (uv is on PATH). If not, stop and point the
-     user at https://docs.astral.sh/uv/getting-started/installation/.
-   - `~/.soda/soda-credentials.env` exists and is edited. Run
-     `grep -q '<your-' ~/.soda/soda-credentials.env` — exit 0 means the file
-     still has placeholders, exit 2 means it is missing: in both cases stop
-     and ask the user to do steps 1-2 of the install docs first. Exit 1
-     means the file is edited: continue.
-   - Re-assert permissions:
-
-     ```bash
-     chmod 700 ~/.soda && chmod 600 ~/.soda/soda-credentials.env
-     ```
-
-2. Register the marketplace and the installer plugin:
+1. Download the installer — run exactly this command:
 
    ```bash
-   claude plugin marketplace add sodadata/soda-claude-marketplace
+   curl -fsSL --create-dirs -o ~/.soda/install.sh https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh
    ```
+
+2. Run it — exactly this command:
 
    ```bash
-   claude plugin install soda-installer@soda-claude-marketplace
+   bash ~/.soda/install.sh
    ```
 
-   If either reports it is already added/installed, treat that as success
-   and continue.
-
-3. Install the plugin from Soda's private index — parse the file, never
-   source or print it. Run this as ONE command, exactly as written (the
-   shape matters: it stays inside the user's pre-approved permissions, and
-   the sed/tail pipeline tolerates trailing whitespace, CRLF line endings,
-   and duplicated lines):
-
-   ```bash
-   UV_INDEX="https://$(sed -n 's/[[:space:]]*$//;s/^SODA_API_KEY_ID=//p' ~/.soda/soda-credentials.env | tail -1):$(sed -n 's/[[:space:]]*$//;s/^SODA_API_KEY_SECRET=//p' ~/.soda/soda-credentials.env | tail -1)@$(sed -n 's/[[:space:]]*$//;s/^SODA_PYPI_HOST=//p' ~/.soda/soda-credentials.env | tail -1)" \
-     uvx -qq --no-progress soda-plugin@latest install
-   ```
-
-   On a resolution error or HTTP 401/403: the API key or chosen index host
-   is wrong — tell the user to verify the key in Soda Cloud and the
-   `SODA_PYPI_HOST` choice in the file. Do not retry with other indexes.
-
-4. Set up the soda-mcp server, only if it is absent: if
-   `claude mcp get soda-mcp` succeeds, the user already has a registration —
-   leave it untouched and tell them so. Only if it is missing, register it
-   (again ONE command, values via substitutions):
-
-   ```bash
-   claude mcp add soda-mcp --transport stdio --scope user \
-     -e SODA_CLOUD_HOST="$(sed -n 's/[[:space:]]*$//;s/^SODA_CLOUD_HOST=//p' ~/.soda/soda-credentials.env | tail -1)" \
-     -e SODA_API_KEY_ID="$(sed -n 's/[[:space:]]*$//;s/^SODA_API_KEY_ID=//p' ~/.soda/soda-credentials.env | tail -1)" \
-     -e SODA_API_KEY_SECRET="$(sed -n 's/[[:space:]]*$//;s/^SODA_API_KEY_SECRET=//p' ~/.soda/soda-credentials.env | tail -1)" \
-     -e UV_INDEX="https://$(sed -n 's/[[:space:]]*$//;s/^SODA_API_KEY_ID=//p' ~/.soda/soda-credentials.env | tail -1):$(sed -n 's/[[:space:]]*$//;s/^SODA_API_KEY_SECRET=//p' ~/.soda/soda-credentials.env | tail -1)@$(sed -n 's/[[:space:]]*$//;s/^SODA_PYPI_HOST=//p' ~/.soda/soda-credentials.env | tail -1)" \
-     -- uvx -qq --no-progress soda-mcp@latest
-   ```
-
-5. On success: tell the user to restart Claude Code — the `/rca` and
-   `/create-incident` skills and the soda-mcp server are available from the
-   next session, and a throttled daily check keeps the plugin updated.
+3. Interpret the outcome for the user:
+   - **"Created ~/.soda/soda-credentials.env … edit it"** — the user hasn't
+     prepared credentials yet. Ask them to edit that file themselves (API
+     key: Soda Cloud → avatar → Profile → API Keys → +; the region/license
+     hosts are documented in the file), then repeat step 2. Do not edit the
+     file for them.
+   - **"still contains placeholder values"** — same: ask the user to edit
+     the file, then repeat step 2.
+   - **uv or claude missing** — relay the install link the script printed
+     and stop.
+   - **401/403 or resolution error** — the API key or `SODA_PYPI_HOST`
+     choice is wrong. Tell the user to verify the key in Soda Cloud and the
+     host in the file. Do not retry with other indexes.
+   - **"already registered — left untouched"** about soda-mcp — relay it;
+     an existing registration is deliberately preserved.
+   - **"Done."** — tell the user to restart Claude Code: the `/rca` and
+     `/create-incident` skills and the soda-mcp server are available from
+     the next session, and a throttled daily check keeps the plugin up to
+     date.

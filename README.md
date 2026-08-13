@@ -46,18 +46,19 @@ chmod 700 ~/.soda && chmod 600 ~/.soda/soda-credentials.env
 
 # 3. Start Claude Code — any folder — with the install prompt and the
 #    session-scoped permissions the install needs
-claude --allowedTools "WebFetch(domain:raw.githubusercontent.com),Bash(claude plugin:*),Bash(claude mcp:*),Bash(uvx:*),Bash(grep:*),Bash(sed:*),Bash(tail:*),Bash(chmod:*)" \
+claude --allowedTools "WebFetch(domain:raw.githubusercontent.com),Bash(curl -fsSL --create-dirs -o ~/.soda/install.sh https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh),Bash(bash ~/.soda/install.sh)" \
   "install the soda plugin as described in https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install-soda-plugin.md"
 ```
 
-Claude fetches [`install-soda-plugin.md`](install-soda-plugin.md) (read it —
-that's exactly what will run), registers this marketplace, installs the
-installer plugin, installs the Soda plugin from your private index, registers
-`soda-mcp` if it isn't already configured, and tells you to restart Claude
-Code once. The `--allowedTools` list is session-scoped and pre-approves only
-what those steps use; anything else still asks. From then on, a throttled
-(daily) session-start check keeps the plugin up to date; new versions apply
-to the next session.
+Claude fetches [`install-soda-plugin.md`](install-soda-plugin.md), which has
+it download and run [`install.sh`](install.sh) (read both — that's exactly
+what will run): the script registers this marketplace, installs the
+installer plugin, installs the Soda plugin from your private index,
+registers `soda-mcp` if it isn't already configured, and Claude then tells
+you to restart Claude Code once. The `--allowedTools` list is session-scoped
+and pre-approves only the two exact commands the instructions use; anything
+else still asks. From then on, a throttled (daily) session-start check keeps
+the plugin up to date; new versions apply to the next session.
 
 Everything installs at the **user level**, never in a project folder: the
 marketplace registration, plugin installs, and the `soda-mcp` server land in
@@ -70,7 +71,29 @@ nothing is written into your repos.
 <details>
 <summary>Manual install (no agent involved)</summary>
 
-The same result, by hand — with your index picked from the table:
+The same result, by hand, using the same auditable
+[`install.sh`](install.sh) the agent runs — download it once, run it twice:
+
+```bash
+curl -fsSL --create-dirs -o ~/.soda/install.sh \
+  https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh
+
+# First run creates ~/.soda/soda-credentials.env and stops for you to edit it
+bash ~/.soda/install.sh
+
+# ... edit ~/.soda/soda-credentials.env (API key + region/license hosts) ...
+
+# Second run installs everything: marketplace, installer plugin, the Soda
+# plugin from your private index, and soda-mcp (only if absent)
+bash ~/.soda/install.sh
+
+# One start — the skills (/rca, /create-incident) and soda-mcp are available
+claude
+```
+
+The script is idempotent — re-run it any time to repair an install. If you
+already created the credentials file in step 1 above, the first run installs
+directly. The private PyPI index hosts, for reference:
 
 | License | Region | Index |
 | --- | --- | --- |
@@ -79,31 +102,18 @@ The same result, by hand — with your index picked from the table:
 | Enterprise | EU | `enterprise.pypi.cloud.soda.io` |
 | Enterprise | US | `enterprise.pypi.us.soda.io` |
 
-```bash
-# Private index access with the API key embedded (or create
-# ~/.soda/soda-credentials.env as above and skip the export)
-export UV_INDEX="https://<SODA_API_KEY_ID>:<SODA_API_KEY_SECRET>@team.pypi.cloud.soda.io"
-
-claude plugin marketplace add sodadata/soda-claude-marketplace
-
-claude plugin install soda-installer@soda-claude-marketplace
-
-# The first claude start with the installer plugin triggers the Soda plugin
-# installation — a restart is needed after it.
-claude
-
-# Subsequent sessions have the Soda skills (/rca, /create-incident) installed.
-claude
-```
-
-Set up the `soda-mcp` server separately per its
-[install docs](https://github.com/sodadata/soda-mcp) — same credentials and
-index.
+Prefer fully hand-driven commands instead of the script? They are exactly
+the steps in `install.sh` — read it and run them one by one.
 
 </details>
 
 ## Troubleshooting
 
+- **The session opens but the install prompt never runs** — on a machine
+  where Claude Code has never been used, the first launch runs first-time
+  onboarding (theme, Anthropic login) and discards the command-line prompt.
+  Finish onboarding, exit, and run install step 3 again — or simply paste
+  the quoted prompt into the open session.
 - **Resolution error / 401 / 403 from the index** — the API key is revoked
   or not entitled, or `SODA_PYPI_HOST` (or `UV_INDEX`) is wrong for your
   license/region. Verify the key in Soda Cloud.
@@ -111,14 +121,12 @@ index.
   that `~/.soda/soda-credentials.env` exists and is edited (or that
   `UV_INDEX` is exported in the environment Claude Code starts from).
 - **Rotating an API key** — edit `~/.soda/soda-credentials.env`, run
-  `claude mcp remove soda-mcp`, and re-run install step 3: the plugin picks
-  up the new key on the next session-start check, and the install re-registers
-  `soda-mcp` with the new key (an existing registration is otherwise left
-  untouched).
-- Manual install/update at any time — needs `UV_INDEX` exported in your
-  shell (the credentials file is only read by the session-start check and
-  the installer, not by uv itself):
+  `claude mcp remove soda-mcp`, then `bash ~/.soda/install.sh`: it
+  re-registers `soda-mcp` with the new key (an existing registration is
+  otherwise left untouched), and the plugin's session-start check picks the
+  new key up automatically.
+- **Repair / manual update at any time** — re-run the idempotent installer:
 
   ```bash
-  uvx -qq --no-progress soda-plugin@latest install
+  bash ~/.soda/install.sh
   ```
