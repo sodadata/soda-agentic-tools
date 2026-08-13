@@ -29,9 +29,13 @@ SELF="$HOME/.soda/install.sh"
 say()  { printf '%s\n' "$*"; }
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 
-# Interactive = a usable terminal, and not inside a Claude Code tool call.
+# Interactive = a usable terminal, not inside a Claude Code tool call
+# (CLAUDECODE is set there), and not explicitly overridden. Non-interactive
+# runs never pause for input and never launch claude at the end — agents
+# must run this script with SODA_INSTALL_NONINTERACTIVE=1 to be explicit.
 INTERACTIVE=0
-if [ -z "${CLAUDECODE:-}" ] && { true </dev/tty; } 2>/dev/null; then
+if [ -z "${SODA_INSTALL_NONINTERACTIVE:-}" ] && [ -z "${CLAUDECODE:-}" ] &&
+   { true </dev/tty; } 2>/dev/null; then
   INTERACTIVE=1
 fi
 

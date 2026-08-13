@@ -7,12 +7,13 @@ root-cause analysis of data quality incidents (`/rca`) and incident
 creation (`/create-incident`) — from Soda's private PyPI, entitled by your
 Soda Cloud API key.
 
-This repo contains **only distribution machinery** (an install command and a
-throttled session-start update check). The plugin content itself is delivered
-from Soda's private package index. Everything that runs on your machine is in
+This repo contains **only distribution machinery** (an install script, an
+install command, and a throttled session-start update check). The plugin
+content itself is delivered from Soda's private package index. Everything
+that runs on your machine is in [`install.sh`](install.sh) and
 [`plugins/soda-installer/scripts/update-check.sh`](plugins/soda-installer/scripts/update-check.sh)
-— it's short on purpose so you can audit it. Your credentials file is data,
-never code: it is parsed, not executed.
+— both short on purpose so you can audit them. Your credentials file is
+data, never code: it is parsed, not executed.
 
 ## Prerequisites
 
@@ -23,56 +24,39 @@ never code: it is parsed, not executed.
   **Profile** → **API Keys** → **+**
   ([docs](https://docs.soda.io/reference/soda-apis/generate-api-keys)) —
   entitled for Soda's private PyPI index (your license and region determine
-  which; the credentials file below lists all four)
+  which; the credentials file lists all four)
 - macOS or Linux (native Windows is not supported yet)
 
 ## Install
 
-Three steps — Claude Code performs the actual installation, including the
-[`soda-mcp`](https://github.com/sodadata/soda-mcp) server setup if you don't
-have it yet:
+Two options, same result: the Soda skills and the
+[`soda-mcp`](https://github.com/sodadata/soda-mcp) server installed at the
+**user level** — your Claude Code config (`~/.claude`), the plugin content
+under `~/.soda/claude-plugins/soda`, your credentials only in
+`~/.soda/soda-credentials.env`; nothing is ever written into your repos.
+Both options run the same auditable [`install.sh`](install.sh), and a
+throttled (daily) session-start check keeps the plugin up to date
+afterwards.
 
-```bash
-# 1. Fetch the credentials template into its private home — the secret never
-#    touches a project folder. Safe to re-run: an existing file is never
-#    overwritten.
-test -f ~/.soda/soda-credentials.env || curl -fsSL --create-dirs \
-  -o ~/.soda/soda-credentials.env \
-  https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/soda-credentials.env
-chmod 700 ~/.soda && chmod 600 ~/.soda/soda-credentials.env
+### Option A — install with Claude
 
-# 2. Edit ~/.soda/soda-credentials.env: fill in your Soda Cloud API key and
-#    pick your region/license hosts (the file documents the choices)
+Claude performs the installation for you and helps when something goes
+wrong. Each action asks for your approval as it happens — this option is
+for you if you already work in Claude Code and trust it with those
+approvals. In a `claude` session, enter:
 
-# 3. Start Claude Code — any folder — with the install prompt and the
-#    session-scoped permissions the install needs
-claude --allowedTools "WebFetch(domain:raw.githubusercontent.com),Bash(curl -fsSL --create-dirs -o ~/.soda/install.sh https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh),Bash(bash ~/.soda/install.sh)" \
-  "install the soda plugin as described in https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install-soda-plugin.md"
+```
+Install the soda plugin from https://github.com/sodadata/soda-claude-marketplace
 ```
 
-Claude fetches [`install-soda-plugin.md`](install-soda-plugin.md), which has
-it download and run [`install.sh`](install.sh) (read both — that's exactly
-what will run): the script registers this marketplace, installs the
-installer plugin, installs the Soda plugin from your private index,
-registers `soda-mcp` if it isn't already configured, and Claude then tells
-you to restart Claude Code once. The `--allowedTools` list is session-scoped
-and pre-approves only the two exact commands the instructions use; anything
-else still asks. From then on, a throttled (daily) session-start check keeps
-the plugin up to date; new versions apply to the next session.
+Claude reads this repo and follows the
+[Installation notes for Claude](#installation-notes-for-claude) below: it
+downloads and runs `install.sh`, asks you to fill in your credentials file
+when that's still needed, and tells you when to restart Claude Code.
 
-Everything installs at the **user level**, never in a project folder: the
-marketplace registration, plugin installs, and the `soda-mcp` server land in
-your Claude Code config (`~/.claude`), the Soda plugin content itself is
-unpacked to `~/.soda/claude-plugins/soda`, and your credentials live only in
-`~/.soda/soda-credentials.env`. Run the install from any directory — the
-skills are then available in every project and session on this machine, and
-nothing is written into your repos.
+### Option B — install with the script directly
 
-<details>
-<summary>Manual install (no agent involved)</summary>
-
-One line, from any directory, using the same auditable
-[`install.sh`](install.sh) the agent runs:
+One line, from any directory:
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh)"
@@ -85,9 +69,9 @@ installer plugin, the Soda plugin from your private index, `soda-mcp` only
 if absent — and finishes by **launching `claude`** with the skills
 available.
 
-It is idempotent and keeps a copy at `~/.soda/install.sh`: re-run
-`bash ~/.soda/install.sh` any time to repair an install. The private PyPI
-index hosts, for reference:
+The script is idempotent and keeps a copy at `~/.soda/install.sh` — re-run
+it any time to repair an install. The private PyPI index hosts, for
+reference:
 
 | License | Region | Index |
 | --- | --- | --- |
@@ -96,21 +80,11 @@ index hosts, for reference:
 | Enterprise | EU | `enterprise.pypi.cloud.soda.io` |
 | Enterprise | US | `enterprise.pypi.us.soda.io` |
 
-Prefer fully hand-driven commands instead of the script? They are exactly
-the steps in `install.sh` — read it and run them one by one.
-
-</details>
-
 ## Troubleshooting
 
-- **The session opens but the install prompt never runs** — on a machine
-  where Claude Code has never been used, the first launch runs first-time
-  onboarding (theme, Anthropic login) and discards the command-line prompt.
-  Finish onboarding, exit, and run install step 3 again — or simply paste
-  the quoted prompt into the open session.
 - **Resolution error / 401 / 403 from the index** — the API key is revoked
-  or not entitled, or `SODA_PYPI_HOST` (or `UV_INDEX`) is wrong for your
-  license/region. Verify the key in Soda Cloud.
+  or not entitled, or `SODA_PYPI_HOST` in `~/.soda/soda-credentials.env` is
+  wrong for your license/region. Verify the key in Soda Cloud.
 - **Nothing installs at session start** — check that `uv` is on PATH and
   that `~/.soda/soda-credentials.env` exists and is edited (or that
   `UV_INDEX` is exported in the environment Claude Code starts from).
@@ -124,3 +98,52 @@ the steps in `install.sh` — read it and run them one by one.
   ```bash
   bash ~/.soda/install.sh
   ```
+
+## Installation notes for Claude
+
+This section is for Claude (or another coding agent) performing the
+installation because the user asked to install the Soda plugin from this
+repository. Follow it exactly.
+
+The entire installation is performed by the public, auditable
+[`install.sh`](install.sh) — your job is to download it, run it, and relay
+the outcome. Never print the user's credentials file
+(`~/.soda/soda-credentials.env`) or any of its values, and never ask the
+user to paste credentials into the chat.
+
+1. Download the installer — run exactly:
+
+   ```bash
+   curl -fsSL --create-dirs -o ~/.soda/install.sh https://raw.githubusercontent.com/sodadata/soda-claude-marketplace/main/install.sh
+   ```
+
+2. Run it **non-interactively** — run exactly:
+
+   ```bash
+   SODA_INSTALL_NONINTERACTIVE=1 bash ~/.soda/install.sh
+   ```
+
+   The variable stops the script from pausing for keyboard input and from
+   launching a nested interactive `claude` at the end (the script also
+   auto-detects agent runs via the `CLAUDECODE` env var and a missing tty,
+   but be explicit). Never run it without the variable, and never run it
+   through a pseudo-tty.
+
+3. Interpret the outcome for the user:
+   - **"still contains placeholder values"** (possibly right after "Created
+     ~/.soda/soda-credentials.env") — the user hasn't prepared credentials
+     yet. Ask them to edit that file themselves (API key: Soda Cloud →
+     avatar → Profile → API Keys → +; the region/license hosts are
+     documented in the file), then repeat step 2. Do not edit the file for
+     them.
+   - **uv or claude missing / no plugin or MCP support** — relay the
+     install/update link the script printed and stop.
+   - **401/403 or resolution error** — the API key or `SODA_PYPI_HOST`
+     choice is wrong. Tell the user to verify the key in Soda Cloud and the
+     host in the file. Do not retry with other indexes.
+   - **"already registered — left untouched"** about soda-mcp — relay it;
+     an existing registration is deliberately preserved.
+   - **"Done."** — tell the user to restart Claude Code: the `/rca` and
+     `/create-incident` skills and the soda-mcp server are available from
+     the next session, and a throttled daily check keeps the plugin up to
+     date.
