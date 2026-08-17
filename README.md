@@ -46,10 +46,11 @@ for you if you already work in Claude Code and trust it with those
 approvals. In a `claude` session, enter:
 
 ```
-Install the soda plugin from https://github.com/sodadata/soda-claude-marketplace
+Install the soda plugin by following the README at https://github.com/sodadata/soda-claude-marketplace
 ```
 
-Claude reads this repo and follows the
+Ask for the README explicitly: it is what points Claude at the installer.
+Claude then follows the
 [Installation notes for Claude](#installation-notes-for-claude) below: it
 downloads and runs `install.sh`, asks you to fill in your credentials file
 when that's still needed, and tells you when to restart Claude Code.
