@@ -1,6 +1,6 @@
 {
   "name": "soda-installer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Installs and auto-updates the Soda plugin from Soda's private PyPI. Contains no proprietary content — just the install command and a throttled SessionStart update check.",
   "author": {
     "name": "Soda",
