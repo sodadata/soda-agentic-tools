@@ -84,6 +84,22 @@ single copy to rotate or revoke.
 
 Restart Claude Code afterwards — skills load at session start.
 
+## Check the install
+
+Start a Claude Code session:
+
+```bash
+claude
+```
+
+Then, inside the session:
+
+- **`/plugin`** — opens the plugin manager. `soda` should be listed as
+  installed and enabled, carrying the `rca` and `create-incident` skills.
+- **`/mcp`** — lists the MCP servers. `soda-mcp` should show as connected.
+
+The skills themselves are then available as `/rca` and `/create-incident`.
+
 ## Update
 
 Re-run the same command. It is idempotent, and upgrades both `soda-mcp` and the
@@ -155,6 +171,10 @@ reachable. This is a separate Claude Code profile, so it will ask you to log in
 the first time. Overriding `HOME` here as well would hide the keychain on
 macOS: login succeeds in the browser but the token cannot be stored, and every
 session reports "not logged in".
+
+In that session, use `/plugin` and `/mcp` exactly as in
+[Check the install](#check-the-install) to confirm the plugin and the MCP
+server came up — this time against the sandbox rather than your own profile.
 
 To remove it, run the [uninstall](#uninstall) command prefixed with the same two
 variables used for the install, then `rm -rf $TEST_HOME`.
