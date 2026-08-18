@@ -99,6 +99,68 @@ It reports what it finds, asks once, then removes the plugin, the local
 marketplace, the `soda-mcp` registration, the `soda-mcp` tool, and
 `~/.soda/claude-plugins/soda`.
 
+## Environment variables
+
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `SODA_CLOUD_HOST` | yes | — | Your Soda Cloud host: `cloud.soda.io` (EU) or `cloud.us.soda.io` (US) |
+| `SODA_API_KEY_ID` | yes | — | Soda Cloud API key id |
+| `SODA_API_KEY_SECRET` | yes | — | Soda Cloud API key secret |
+| `SODA_PYPI_INDEX` | no | `team.pypi.cloud.soda.io` | The private package index for your license and region (see the table above) |
+| `SODA_PYPI_API_KEY_ID` | no | `SODA_API_KEY_ID` | Use a *different* key for the package index than for Soda Cloud |
+| `SODA_PYPI_API_KEY_SECRET` | no | `SODA_API_KEY_SECRET` | As above |
+| `SODA_INSTALL_NONINTERACTIVE` | no | — | Set to `1` to skip the confirmation prompt (agents, CI) |
+| `SODA_UNINSTALL_NONINTERACTIVE` | no | — | The same, for `uninstall.sh` |
+
+The two `SODA_PYPI_*` key variables exist because the key entitled for the
+package index is not always the key you use against Soda Cloud. When they
+differ, the script says so in its plan output — normal for a test setup, worth
+a second look on a customer machine.
+
+## Testing the install
+
+To try the installer without touching your own setup, point both `HOME` and
+`CLAUDE_CONFIG_DIR` at a scratch directory. Both are needed:
+`CLAUDE_CONFIG_DIR` does not follow `HOME`.
+
+| Variable | Redirects |
+| --- | --- |
+| `HOME` | the plugin tree at `~/.soda/claude-plugins/soda`, and uv's tool directory where the `soda-mcp` binary lands |
+| `CLAUDE_CONFIG_DIR` | Claude Code's config — the marketplace, plugin and `soda-mcp` registrations |
+
+```bash
+TEST_HOME=/tmp/soda-install-test
+
+HOME=$TEST_HOME \
+CLAUDE_CONFIG_DIR=$TEST_HOME/.claude \
+SODA_CLOUD_HOST=<your-soda-cloud-host> \
+SODA_API_KEY_ID=<your-api-key-id> \
+SODA_API_KEY_SECRET=<your-api-key-secret> \
+SODA_PYPI_INDEX=<your-index-host> \
+SODA_PYPI_API_KEY_ID=<index-key-id> \
+SODA_PYPI_API_KEY_SECRET=<index-key-secret> \
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sodadata/soda-agentic-tools/main/claude/install.sh)"
+```
+
+Check what landed in the sandbox, and that your real profile is untouched:
+
+```bash
+HOME=$TEST_HOME CLAUDE_CONFIG_DIR=$TEST_HOME/.claude claude plugin list
+HOME=$TEST_HOME CLAUDE_CONFIG_DIR=$TEST_HOME/.claude uv tool list
+uv tool list        # your own tools — unchanged
+```
+
+Tear it down with the same two variables, then delete the directory:
+
+```bash
+HOME=$TEST_HOME CLAUDE_CONFIG_DIR=$TEST_HOME/.claude \
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sodadata/soda-agentic-tools/main/claude/uninstall.sh)"
+rm -rf $TEST_HOME
+```
+
+Avoid `claude mcp get soda-mcp` in a shared terminal or an agent session: it
+prints the API key secret in plain text.
+
 ## Troubleshooting
 
 - **`401`/`403` or a resolution error from the index** — the API key is revoked
