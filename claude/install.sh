@@ -198,7 +198,19 @@ for skill in "$PLUGIN_DIR"/plugins/soda/skills/*/; do
 done
 say "  mcp server 'soda-mcp'  $MCP_BIN (user scope)"
 say ""
-say "Start claude, or restart your running sessions, to pick this up."
+# A non-default CLAUDE_CONFIG_DIR means this is an isolated profile (the test
+# flow in the README): spell out the launch command with the real path,
+# because plain `claude` would open the default profile instead.
+if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
+  say "Start claude on this install with:"
+  say ""
+  say "  CLAUDE_CONFIG_DIR=$CLAUDE_CONFIG_DIR claude"
+  say ""
+  say "then check it with /plugin and /mcp inside the session."
+else
+  say "Start claude, or restart your running sessions, to pick this up."
+  say "Check it with /plugin and /mcp inside the session."
+fi
 say ""
 say "To undo everything:"
 say "  claude plugin uninstall soda@soda"
