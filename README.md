@@ -142,21 +142,22 @@ SODA_PYPI_API_KEY_SECRET=<index-key-secret> \
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sodadata/soda-agentic-tools/main/claude/install.sh)"
 ```
 
-Check what landed in the sandbox, and that your real profile is untouched:
+Then start Claude Code on that install — overriding **only**
+`CLAUDE_CONFIG_DIR`, not `HOME`:
 
 ```bash
-HOME=$TEST_HOME CLAUDE_CONFIG_DIR=$TEST_HOME/.claude claude plugin list
-HOME=$TEST_HOME CLAUDE_CONFIG_DIR=$TEST_HOME/.claude uv tool list
-uv tool list        # your own tools — unchanged
+CLAUDE_CONFIG_DIR=$TEST_HOME/.claude claude
 ```
 
-Tear it down with the same two variables, then delete the directory:
+The registrations store absolute paths into `$TEST_HOME`, so the plugin and
+`soda-mcp` still resolve, while your real `HOME` keeps your login keychain
+reachable. This is a separate Claude Code profile, so it will ask you to log in
+the first time. Overriding `HOME` here as well would hide the keychain on
+macOS: login succeeds in the browser but the token cannot be stored, and every
+session reports "not logged in".
 
-```bash
-HOME=$TEST_HOME CLAUDE_CONFIG_DIR=$TEST_HOME/.claude \
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sodadata/soda-agentic-tools/main/claude/uninstall.sh)"
-rm -rf $TEST_HOME
-```
+To remove it, run the [uninstall](#uninstall) command prefixed with the same two
+variables used for the install, then `rm -rf $TEST_HOME`.
 
 Avoid `claude mcp get soda-mcp` in a shared terminal or an agent session: it
 prints the API key secret in plain text.
