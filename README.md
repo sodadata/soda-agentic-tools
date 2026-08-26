@@ -1,8 +1,7 @@
 # Soda plugin for Claude Code
 
 Installs the **Soda plugin** for [Claude Code](https://claude.com/claude-code) —
-today the skills for root-cause analysis of data quality incidents (`/rca`) and
-incident creation (`/create-incident`) — together with the
+today the skills for root-cause analysis of data quality incidents (`/rca`) — together with the
 [`soda-mcp`](https://github.com/sodadata/soda-mcp) server. Both come from Soda's
 private package index, entitled by your Soda Cloud API key.
 
@@ -21,6 +20,11 @@ purpose so you can audit them before running them.
   ([docs](https://docs.soda.io/reference/soda-apis/generate-api-keys)) —
   entitled for Soda's private package index
 - macOS or Linux (native Windows is not supported yet)
+
+## Feature flag
+
+For now, you will need to enable the feature flag `incidentRcaReportEnabled` 
+in your organization settings on Soda Cloud.
 
 ## Install
 
@@ -138,7 +142,7 @@ package index is not always the key you use against Soda Cloud. When they
 differ, the script says so in its plan output — normal for a test setup, worth
 a second look on a customer machine.
 
-## Testing the install
+## (For developers) Testing the install
 
 To try the installer without touching your own setup, point both `HOME` and
 `CLAUDE_CONFIG_DIR` at a scratch directory. Both are needed:
