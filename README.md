@@ -115,6 +115,11 @@ It reports what it finds, asks once, then removes the plugin, the local
 marketplace, the `soda-mcp` registration, the `soda-mcp` tool, and
 `~/.soda/claude-plugins/soda`.
 
+It also clears anything left by the retired `soda-installer` plugin: that
+plugin, its `soda-claude-marketplace` marketplace, its update-check stamp, and
+`~/.soda/claude/soda-credentials.env`. That last file holds a Soda Cloud API
+key, so it is listed by name in the confirmation prompt before anything goes.
+
 ## Environment variables
 
 | Variable | Required | Default | Purpose |
