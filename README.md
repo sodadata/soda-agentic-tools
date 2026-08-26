@@ -54,6 +54,17 @@ Team/EU, also set `SODA_PYPI_INDEX` to your index:
 The script checks the prerequisites and your credentials, prints exactly what
 it is going to do, and asks once before changing anything.
 
+## Usage of the RCA capability
+
+Ideally, add following MCP connection in your Claude Code for an effective RCA:
+* MCP connection to your code repositories like GitHub
+* MCP connection to your database like Snowflake
+* MCP connection to your orchestration like Airflow
+* MCP connection to your transformations like dbt
+
+Once that is done, just copy a link of the failing check and paste it in a Claude Code session.  
+It will find out it's a failing check and start the RCA skill.
+
 ## What the script does
 
 On approval it runs the following, with `UV_INDEX` pointing at the private index
