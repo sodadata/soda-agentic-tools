@@ -225,10 +225,23 @@ function Main {
         # ------------------------------------------------------- soda-mcp
 
         Say "== Installing soda-mcp from Soda's private index"
-        if ((Run uv @('tool', 'install', '--force', '-q', 'soda-mcp')) -ne 0) {
+        # soda-mcp depends on 'cryptography', which publishes no Windows ARM64
+        # wheel; a native ARM64 Python would try to compile it with Rust and
+        # fail. On ARM64, run soda-mcp under a uv-managed x64 Python instead:
+        # Windows runs it through its x64 emulation, and every dependency has
+        # an x64 wheel. The plugin's own scripts stay on the native Python.
+        $mcpPython = @()
+        if ($arch -eq 'ARM64') {
+            Say "   Windows on ARM: installing soda-mcp under an x64 Python (its 'cryptography'"
+            Say "   dependency has no ARM64 wheel); uv downloads that Python once"
+            $mcpPython = @('--python', 'cpython-3.12-windows-x86_64-none')
+        }
+        if ((Run uv (@('tool', 'install', '--force', '-q') + $mcpPython + @('soda-mcp'))) -ne 0) {
             Fail ("soda-mcp install failed. A 401/403 or resolution error means the API key " +
                   "is wrong, or SODA_PYPI_INDEX ($index) is not the index your license " +
-                  "and region entitle. Verify the key in Soda Cloud.")
+                  "and region entitle; verify the key in Soda Cloud. A build error " +
+                  "(cargo, maturin, Visual C++) means a dependency has no prebuilt wheel " +
+                  "for this Windows architecture; report that to Soda support.")
         }
         if (-not (Test-Path $mcpBin)) {
             Fail "soda-mcp installed but no executable at $mcpBin. Report this to Soda support."

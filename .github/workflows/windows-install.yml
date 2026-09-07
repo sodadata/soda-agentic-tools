@@ -10,7 +10,8 @@ name: Windows install
 #
 # Runners are Windows Server images: windows-2022 and windows-2025 cover the
 # "Server 2022 or later" floor; windows-11-arm covers ARM64 and is marked
-# experimental. Windows 11 client specifics (Store aliases, AppLocker,
+# experimental (on ARM64 the installer puts soda-mcp on an x64 Python, since
+# 'cryptography' ships no ARM64 wheel). Windows 11 client specifics (Store aliases, AppLocker,
 # managed policies) are not exercised here: use a VM for those.
 #
 # Repository secrets (Settings -> Secrets and variables -> Actions):

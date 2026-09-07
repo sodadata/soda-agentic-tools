@@ -135,6 +135,11 @@ Windows differences:
 - The plugin's Stop hook is stamped with the absolute path of the Python
   interpreter found at install time, because Windows has no `python3`
   command. Re-run the installer after moving or upgrading Python.
+- On **ARM64** Windows, `soda-mcp` is installed under a uv-managed x64
+  Python, which Windows runs through its x64 emulation. One of its
+  dependencies (`cryptography`) publishes no ARM64 wheel, and a native
+  install would try to compile it. uv downloads that Python once, about
+  30 MB; everything else, including the plugin's scripts, stays native.
 
 To check the result without starting a session, download and run
 [`verify.ps1`](claude/verify.ps1): it checks every registration, starts
