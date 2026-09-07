@@ -46,9 +46,12 @@ function Fail([string]$Text) { throw $Text }
 # Native commands: run with a local 'Continue' preference so stderr chatter
 # never becomes a terminating error (Windows PowerShell 5.1 does that when
 # stderr is redirected), and hand back the exit code.
+# Out-Host on purpose: inside a function, a native command's stdout would
+# otherwise join the return value, turning "exit code" into an array of lines
+# (and hiding those lines from the user).
 function Run([string]$Exe, [string[]]$Arguments) {
     $ErrorActionPreference = 'Continue'
-    & $Exe @Arguments
+    & $Exe @Arguments | Out-Host
     return $LASTEXITCODE
 }
 function RunQuiet([string]$Exe, [string[]]$Arguments) {
