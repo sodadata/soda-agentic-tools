@@ -46,9 +46,12 @@ function Fail([string]$Text) { throw $Text }
 # Native commands: run with a local 'Continue' preference so stderr chatter
 # never becomes a terminating error (Windows PowerShell 5.1 does that when
 # stderr is redirected), and hand back the exit code.
+# Out-Host on purpose: inside a function, a native command's stdout would
+# otherwise join the return value, turning "exit code" into an array of lines
+# (and hiding those lines from the user).
 function Run([string]$Exe, [string[]]$Arguments) {
     $ErrorActionPreference = 'Continue'
-    & $Exe @Arguments
+    & $Exe @Arguments | Out-Host
     return $LASTEXITCODE
 }
 function RunQuiet([string]$Exe, [string[]]$Arguments) {
@@ -56,15 +59,22 @@ function RunQuiet([string]$Exe, [string[]]$Arguments) {
     & $Exe @Arguments 2>&1 | Out-Null
     return $LASTEXITCODE
 }
+# stdout only: Windows PowerShell 5.1 renders a merged stderr line as
+# "uv.exe : <text>", which then corrupts whatever the caller parses.
 function Capture([string]$Exe, [string[]]$Arguments) {
     $ErrorActionPreference = 'Continue'
-    $text = (& $Exe @Arguments 2>&1 | Out-String)
+    $text = (& $Exe @Arguments 2>$null | Out-String)
     if ($LASTEXITCODE -ne 0) { return $null }
     return $text.Trim()
 }
 function Have([string]$Name) { return [bool](Get-Command $Name -ErrorAction SilentlyContinue) }
 
 function Main {
+    # Cmdlet failures (a bad path, an unreadable file) abort at once instead of
+    # carrying an empty value forward. Native commands are unaffected: the
+    # helpers above run them under a local 'Continue'.
+    $ErrorActionPreference = 'Stop'
+
     # Interactive = a real console, not inside a Claude Code tool call
     # (CLAUDECODE is set there), not CI, and not explicitly overridden.
     $interactive = (-not $env:SODA_INSTALL_NONINTERACTIVE) -and (-not $env:CLAUDECODE) -and
@@ -126,7 +136,8 @@ function Main {
     }
     $uvVersion = (Capture uv @('--version'))
     $claudeVersion = (Capture claude @('--version'))
-    $pythonVersion = (Capture python @('-c', 'import sys; print("%d.%d.%d" % sys.version_info[:3])'))
+    # No double quotes inside native arguments: PowerShell 5.1 mangles them.
+    $pythonVersion = (Capture python @('-c', 'import platform; print(platform.python_version())'))
     Say "   OK: $uvVersion, claude $claudeVersion, python $pythonVersion"
 
     $auth = Capture claude @('auth', 'status')
@@ -217,10 +228,23 @@ function Main {
         # ------------------------------------------------------- soda-mcp
 
         Say "== Installing soda-mcp from Soda's private index"
-        if ((Run uv @('tool', 'install', '--force', '-q', 'soda-mcp')) -ne 0) {
+        # soda-mcp depends on 'cryptography', which publishes no Windows ARM64
+        # wheel; a native ARM64 Python would try to compile it with Rust and
+        # fail. On ARM64, run soda-mcp under a uv-managed x64 Python instead:
+        # Windows runs it through its x64 emulation, and every dependency has
+        # an x64 wheel. The plugin's own scripts stay on the native Python.
+        $mcpPython = @()
+        if ($arch -eq 'ARM64') {
+            Say "   Windows on ARM: installing soda-mcp under an x64 Python (its 'cryptography'"
+            Say "   dependency has no ARM64 wheel); uv downloads that Python once"
+            $mcpPython = @('--python', 'cpython-3.12-windows-x86_64-none')
+        }
+        if ((Run uv (@('tool', 'install', '--force', '-q') + $mcpPython + @('soda-mcp'))) -ne 0) {
             Fail ("soda-mcp install failed. A 401/403 or resolution error means the API key " +
                   "is wrong, or SODA_PYPI_INDEX ($index) is not the index your license " +
-                  "and region entitle. Verify the key in Soda Cloud.")
+                  "and region entitle; verify the key in Soda Cloud. A build error " +
+                  "(cargo, maturin, Visual C++) means a dependency has no prebuilt wheel " +
+                  "for this Windows architecture; report that to Soda support.")
         }
         if (-not (Test-Path $mcpBin)) {
             Fail "soda-mcp installed but no executable at $mcpBin. Report this to Soda support."
@@ -245,10 +269,11 @@ function Main {
         Say "== Installing the soda plugin from Soda's private index"
         # The wheel unpacks itself into $pluginDir, which is a local Claude Code
         # marketplace, and registers marketplace 'soda' + plugin 'soda@soda'.
-        if ((Run uvx @('-qq', '--no-progress', 'soda-plugin@latest', 'install')) -ne 0) {
-            Fail ("plugin install failed. A 401/403 or resolution error means the API key " +
-                  "is wrong, or SODA_PYPI_INDEX ($index) is not the index your license " +
-                  "and region entitle. Verify the key in Soda Cloud.")
+        # -q, not -qq: quiet, but uv's own error still prints when this fails.
+        if ((Run uvx @('-q', '--no-progress', 'soda-plugin@latest', 'install')) -ne 0) {
+            Fail ("plugin install failed; uv's error is printed above. A 401/403 or " +
+                  "resolution error means the API key is wrong, or SODA_PYPI_INDEX ($index) " +
+                  "is not the index your license and region entitle. Verify the key in Soda Cloud.")
         }
     } finally {
         Remove-Item Env:UV_INDEX -ErrorAction SilentlyContinue

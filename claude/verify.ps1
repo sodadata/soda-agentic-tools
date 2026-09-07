@@ -20,9 +20,10 @@ $script:failures = 0
 function Pass([string]$Text) { Write-Host "PASS  $Text" }
 function Failed([string]$Text) { Write-Host "FAIL  $Text" -ForegroundColor Red; $script:failures++ }
 function Check([bool]$Condition, [string]$Text) { if ($Condition) { Pass $Text } else { Failed $Text } }
+# stdout only: PowerShell 5.1 renders a merged stderr line as "x.exe : <text>".
 function Capture([string]$Exe, [string[]]$Arguments) {
     $ErrorActionPreference = 'Continue'
-    $text = (& $Exe @Arguments 2>&1 | Out-String)
+    $text = (& $Exe @Arguments 2>$null | Out-String)
     return @{ Code = $LASTEXITCODE; Text = $text }
 }
 
@@ -103,6 +104,9 @@ $hook = $hooks.hooks.Stop[0].hooks[0]
 Write-Host "      hook command: $($hook.command)"
 $interpreter = Get-Command $hook.command -ErrorAction SilentlyContinue
 Check ([bool]$interpreter)                                            "hook interpreter resolves: $($hook.command)"
+# The uvx environment the installer ran in lives under uv's cache and is
+# pruned at will; a hook stamped with it stops firing without a trace.
+Check ($hook.command -notmatch '[\\/]uv[\\/]cache[\\/]')                "hook interpreter is persistent (not inside uv's cache)"
 if ($interpreter) {
     $hookScript = $hook.args[0] -replace '\$\{CLAUDE_PLUGIN_ROOT\}', $root
     $tmp = Join-Path ([IO.Path]::GetTempPath()) "soda-verify-$PID"
