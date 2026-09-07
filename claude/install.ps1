@@ -266,10 +266,11 @@ function Main {
         Say "== Installing the soda plugin from Soda's private index"
         # The wheel unpacks itself into $pluginDir, which is a local Claude Code
         # marketplace, and registers marketplace 'soda' + plugin 'soda@soda'.
-        if ((Run uvx @('-qq', '--no-progress', 'soda-plugin@latest', 'install')) -ne 0) {
-            Fail ("plugin install failed. A 401/403 or resolution error means the API key " +
-                  "is wrong, or SODA_PYPI_INDEX ($index) is not the index your license " +
-                  "and region entitle. Verify the key in Soda Cloud.")
+        # -q, not -qq: quiet, but uv's own error still prints when this fails.
+        if ((Run uvx @('-q', '--no-progress', 'soda-plugin@latest', 'install')) -ne 0) {
+            Fail ("plugin install failed; uv's error is printed above. A 401/403 or " +
+                  "resolution error means the API key is wrong, or SODA_PYPI_INDEX ($index) " +
+                  "is not the index your license and region entitle. Verify the key in Soda Cloud.")
         }
     } finally {
         Remove-Item Env:UV_INDEX -ErrorAction SilentlyContinue
