@@ -104,6 +104,9 @@ $hook = $hooks.hooks.Stop[0].hooks[0]
 Write-Host "      hook command: $($hook.command)"
 $interpreter = Get-Command $hook.command -ErrorAction SilentlyContinue
 Check ([bool]$interpreter)                                            "hook interpreter resolves: $($hook.command)"
+# The uvx environment the installer ran in lives under uv's cache and is
+# pruned at will; a hook stamped with it stops firing without a trace.
+Check ($hook.command -notmatch '[\\/]uv[\\/]cache[\\/]')                "hook interpreter is persistent (not inside uv's cache)"
 if ($interpreter) {
     $hookScript = $hook.args[0] -replace '\$\{CLAUDE_PLUGIN_ROOT\}', $root
     $tmp = Join-Path ([IO.Path]::GetTempPath()) "soda-verify-$PID"
