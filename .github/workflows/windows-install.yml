@@ -1,0 +1,164 @@
+name: Windows install
+
+# Manually triggered rehearsal of the native Windows customer install.
+#
+# Installs Claude Code, uv and Python on a fresh hosted runner, runs
+# claude/install.ps1 with real credentials against a customer-facing index,
+# verifies the result with claude/verify.ps1, re-runs the installer under
+# Windows PowerShell 5.1 (idempotency + the shell Windows 11 ships with), then
+# uninstalls and verifies that nothing is left.
+#
+# Runners are Windows Server images: windows-2022 and windows-2025 cover the
+# "Server 2022 or later" floor; windows-11-arm covers ARM64 and is marked
+# experimental. Windows 11 client specifics (Store aliases, AppLocker,
+# managed policies) are not exercised here: use a VM for those.
+#
+# Repository secrets (Settings -> Secrets and variables -> Actions):
+#   SODA_API_KEY_ID, SODA_API_KEY_SECRET       Soda Cloud API key, entitled for
+#                                              the index given as input
+#   SODA_PYPI_API_KEY_ID, SODA_PYPI_API_KEY_SECRET
+#                                              optional: a separate key for the
+#                                              index (test setups only)
+#   ANTHROPIC_API_KEY                          optional: enables the session
+#                                              job, which costs a few cents
+#
+# The install always tests the PUBLISHED wheel and soda-mcp: the runner has
+# no access to a checkout of the private plugin repo.
+
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: Run the installer from this checkout, or the published copy on main
+        type: choice
+        options: [checkout, published]
+        default: checkout
+      soda_cloud_host:
+        description: Soda Cloud host
+        type: string
+        default: cloud.soda.io
+      pypi_index:
+        description: Private package index the key is entitled for
+        type: string
+        default: team.pypi.cloud.soda.io
+      session_test:
+        description: Also start a Claude Code session and ask it for the plugin's skills (needs ANTHROPIC_API_KEY)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  DISABLE_AUTOUPDATER: "1"
+  SODA_INSTALL_NONINTERACTIVE: "1"
+  SODA_UNINSTALL_NONINTERACTIVE: "1"
+
+jobs:
+  install:
+    name: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            experimental: false
+          - runner: windows-2025
+            experimental: false
+          - runner: windows-11-arm
+            experimental: true
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Claude Code
+        run: |
+          irm https://claude.ai/install.ps1 | iex
+          "$env:USERPROFILE\.local\bin" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+
+      - name: Toolchain versions
+        run: |
+          claude --version
+          uv --version
+          python --version
+          Get-Command python | Select-Object -ExpandProperty Source
+          (Get-CimInstance Win32_OperatingSystem).Caption
+          $PSVersionTable.PSVersion
+
+      - name: Fetch the published installer
+        if: inputs.source == 'published'
+        run: |
+          New-Item -ItemType Directory -Force published | Out-Null
+          foreach ($f in 'install.ps1', 'uninstall.ps1') {
+            irm "https://raw.githubusercontent.com/sodadata/soda-agentic-tools/main/claude/$f" -OutFile "published/$f"
+          }
+
+      - name: Install (pwsh)
+        env:
+          SODA_CLOUD_HOST: ${{ inputs.soda_cloud_host }}
+          SODA_PYPI_INDEX: ${{ inputs.pypi_index }}
+          SODA_API_KEY_ID: ${{ secrets.SODA_API_KEY_ID }}
+          SODA_API_KEY_SECRET: ${{ secrets.SODA_API_KEY_SECRET }}
+          SODA_PYPI_API_KEY_ID: ${{ secrets.SODA_PYPI_API_KEY_ID }}
+          SODA_PYPI_API_KEY_SECRET: ${{ secrets.SODA_PYPI_API_KEY_SECRET }}
+        run: |
+          if (-not $env:SODA_API_KEY_ID) { throw "SODA_API_KEY_ID / SODA_API_KEY_SECRET repository secrets are not set" }
+          $dir = if ('${{ inputs.source }}' -eq 'published') { 'published' } else { 'claude' }
+          pwsh -File "$dir/install.ps1"
+          if ($LASTEXITCODE -ne 0) { throw "install.ps1 exited $LASTEXITCODE" }
+
+      - name: Verify
+        run: |
+          pwsh -File claude/verify.ps1
+          if ($LASTEXITCODE -ne 0) { throw "verify.ps1 exited $LASTEXITCODE" }
+
+      - name: Re-install under Windows PowerShell 5.1 (idempotent update path)
+        env:
+          SODA_CLOUD_HOST: ${{ inputs.soda_cloud_host }}
+          SODA_PYPI_INDEX: ${{ inputs.pypi_index }}
+          SODA_API_KEY_ID: ${{ secrets.SODA_API_KEY_ID }}
+          SODA_API_KEY_SECRET: ${{ secrets.SODA_API_KEY_SECRET }}
+          SODA_PYPI_API_KEY_ID: ${{ secrets.SODA_PYPI_API_KEY_ID }}
+          SODA_PYPI_API_KEY_SECRET: ${{ secrets.SODA_PYPI_API_KEY_SECRET }}
+        run: |
+          $dir = if ('${{ inputs.source }}' -eq 'published') { 'published' } else { 'claude' }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$dir/install.ps1"
+          if ($LASTEXITCODE -ne 0) { throw "install.ps1 under PowerShell 5.1 exited $LASTEXITCODE" }
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File claude/verify.ps1
+          if ($LASTEXITCODE -ne 0) { throw "verify.ps1 under PowerShell 5.1 exited $LASTEXITCODE" }
+
+      - name: Session test (claude -p)
+        if: inputs.session_test
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if (-not $env:ANTHROPIC_API_KEY) { throw "ANTHROPIC_API_KEY repository secret is not set" }
+          $prompt = 'List the names of the skills provided by the soda plugin, one per line, and nothing else.'
+          $json = claude -p $prompt --output-format json --max-turns 2 | Out-String
+          if ($LASTEXITCODE -ne 0) { throw "claude -p exited $LASTEXITCODE`n$json" }
+          $result = ($json | ConvertFrom-Json).result
+          Write-Host $result
+          if ($result -notmatch 'rca' -or $result -notmatch 'create-incident') {
+            throw "the session did not report both skills"
+          }
+
+      - name: Uninstall
+        run: |
+          $dir = if ('${{ inputs.source }}' -eq 'published') { 'published' } else { 'claude' }
+          pwsh -File "$dir/uninstall.ps1"
+          if ($LASTEXITCODE -ne 0) { throw "uninstall.ps1 exited $LASTEXITCODE" }
+
+      - name: Verify removal
+        run: |
+          pwsh -File claude/verify.ps1 -Removed
+          if ($LASTEXITCODE -ne 0) { throw "verify.ps1 -Removed exited $LASTEXITCODE" }

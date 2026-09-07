@@ -14,12 +14,24 @@ purpose so you can audit them before running them.
 - [Claude Code](https://claude.com/claude-code) — the `claude` CLI, installed
   and logged in ([install instructions](https://docs.claude.com/en/docs/claude-code/setup))
 - [`uv`](https://docs.astral.sh/uv/getting-started/installation/) on PATH
-- `python3` 3.8 or newer on PATH (used by the `/create-incident` skill)
+- Python 3.8 or newer on PATH: `python3` on macOS and Linux, `python` on
+  Windows (the skills run Python scripts)
 - A Soda Cloud API key — create one in the Soda Cloud UI under your avatar →
   **Profile** → **API Keys** → **+**
   ([docs](https://docs.soda.io/reference/soda-apis/generate-api-keys)) —
   entitled for Soda's private package index
-- macOS or Linux (native Windows is not supported yet)
+- One of these platforms:
+
+  | Platform | Supported | Installer |
+  | --- | --- | --- |
+  | macOS | 13 or later | `install.sh` |
+  | Linux | Ubuntu 20.04+, Debian 10+, RHEL 8+ | `install.sh` |
+  | Windows, inside WSL 2 | Windows 11 23H2 or later | `install.sh`, run in the WSL distribution |
+  | Windows, native | Windows 11 23H2 or later, Windows Server 2022 or later; x64 or ARM64 | `install.ps1` — see [Install on Windows](#install-on-windows) |
+
+  Windows 10 is out of Microsoft support and is not supported. Under
+  Extended Security Updates the installer can be forced with
+  `SODA_INSTALL_ALLOW_UNSUPPORTED_OS=1`, on request and at your own risk.
 
 ## Feature flag
 
@@ -64,6 +76,75 @@ Ideally, add following MCP connection in your Claude Code for an effective RCA:
 
 Once that is done, just copy a link of the failing check and paste it in a Claude Code session.  
 It will find out it's a failing check and start the RCA skill.
+
+## Install on Windows
+
+Two ways to run Claude Code on Windows, and the plugin follows Claude Code:
+
+- **WSL 2** — open your WSL distribution and use the macOS/Linux
+  [install](#install) above, unchanged. Recommended when your IT allows WSL:
+  it is the rehearsed path, and the only one where Claude Code's sandboxing
+  works.
+- **Native Windows** — the PowerShell installer below. Windows 11 23H2 or
+  later, or Windows Server 2022 or later, on x64 or ARM64.
+
+Native prerequisites, on top of the list above:
+
+- [Claude Code](https://code.claude.com/docs/en/setup) installed with its
+  Windows installer (`irm https://claude.ai/install.ps1 | iex`) or WinGet
+- [`uv`](https://docs.astral.sh/uv/getting-started/installation/) —
+  `irm https://astral.sh/uv/install.ps1 | iex`
+- Python 3.8 or newer as `python` on PATH — `winget install Python.Python.3.12`
+  or the python.org installer. If typing `python` opens the Microsoft Store,
+  turn off the Python entries under **Settings → Apps → Advanced app settings →
+  App execution aliases**: that alias is a stub, not an interpreter, and the
+  installer refuses it.
+- [Git for Windows](https://git-scm.com/downloads/win), recommended. It gives
+  Claude Code a Bash tool; without it Claude Code runs the skills' commands
+  through PowerShell, which the skills support but which is less rehearsed.
+
+Then, in PowerShell (5.1 or 7), from any directory:
+
+```powershell
+$env:SODA_CLOUD_HOST = "cloud.soda.io"
+$env:SODA_API_KEY_ID = "<your-api-key-id>"
+$env:SODA_API_KEY_SECRET = "<your-api-key-secret>"
+irm https://raw.githubusercontent.com/sodadata/soda-agentic-tools/main/claude/install.ps1 | iex
+```
+
+Setting the variables in the window like this keeps the key out of your
+profile. They apply to the current window only. The same optional variables as
+on macOS/Linux apply (`SODA_PYPI_INDEX` and the two `SODA_PYPI_API_KEY_*`
+overrides), and the script does the same things in the same order, with these
+Windows differences:
+
+- It refuses to run below the supported Windows floor (see
+  `SODA_INSTALL_ALLOW_UNSUPPORTED_OS`).
+- It sets `UV_NATIVE_TLS=true` for the duration of the install, so uv trusts
+  the Windows certificate store. That is what makes the downloads work behind
+  a corporate proxy that inspects TLS with its own root CA. Claude Code itself
+  follows the system proxy and certificate settings; see
+  [network configuration](https://code.claude.com/docs/en/network-config).
+- `soda-mcp` lands as `soda-mcp.exe` in uv's tool directory
+  (`%USERPROFILE%\.local\bin` by default) and the plugin under
+  `%USERPROFILE%\.soda\claude-plugins\soda`. Claude Code keeps its own copy
+  under `%USERPROFILE%\.claude\plugins\cache`. If your endpoint policy
+  (AppLocker, WDAC) blocks executables under the user profile, those are the
+  paths to allow; `soda-mcp.exe` is a uv-generated launcher and is not
+  code-signed.
+- The plugin's Stop hook is stamped with the absolute path of the Python
+  interpreter found at install time, because Windows has no `python3`
+  command. Re-run the installer after moving or upgrading Python.
+
+To check the result without starting a session, download and run
+[`verify.ps1`](claude/verify.ps1): it checks every registration, starts
+`soda-mcp`, and runs the hook and the skill scripts.
+
+To uninstall:
+
+```powershell
+irm https://raw.githubusercontent.com/sodadata/soda-agentic-tools/main/claude/uninstall.ps1 | iex
+```
 
 ## What the script does
 
@@ -147,6 +228,7 @@ key, so it is listed by name in the confirmation prompt before anything goes.
 | `SODA_PYPI_API_KEY_SECRET` | no | `SODA_API_KEY_SECRET` | As above |
 | `SODA_INSTALL_NONINTERACTIVE` | no | — | Set to `1` to skip the confirmation prompt (agents, CI) |
 | `SODA_UNINSTALL_NONINTERACTIVE` | no | — | The same, for `uninstall.sh` |
+| `SODA_INSTALL_ALLOW_UNSUPPORTED_OS` | no | — | Windows only: set to `1` to install below the supported Windows floor |
 
 The two `SODA_PYPI_*` key variables exist because the key entitled for the
 package index is not always the key you use against Soda Cloud. When they
@@ -202,6 +284,24 @@ variables used for the install, then `rm -rf $TEST_HOME`.
 Avoid `claude mcp get soda-mcp` in a shared terminal or an agent session: it
 prints the API key secret in plain text.
 
+### Windows
+
+The same isolation works on Windows with `$env:USERPROFILE` and
+`$env:CLAUDE_CONFIG_DIR` pointed at a scratch directory (`HOME` is derived from
+`USERPROFILE` there). The [Windows install](.github/workflows/windows-install.yml)
+workflow does this on hosted runners: **Actions → Windows install → Run
+workflow**. It installs Claude Code, uv and Python on a fresh Windows Server
+2022, 2025 and (experimental) Windows 11 ARM64 runner, runs `install.ps1` from
+the checkout or from the published copy, runs `verify.ps1`, re-installs under
+Windows PowerShell 5.1, then uninstalls and verifies that nothing is left. It
+needs the `SODA_API_KEY_ID` / `SODA_API_KEY_SECRET` repository secrets, and
+optionally `ANTHROPIC_API_KEY` for the session test. It always tests the
+published wheel.
+
+Hosted runners are Windows Server images with an unrestricted user, so
+Windows 11 client behaviour (Store aliases, AppLocker, managed policies) and
+proxies still need a manual run on a Windows 11 VM.
+
 ## Troubleshooting
 
 - **`401`/`403` or a resolution error from the index** — the API key is revoked
@@ -214,3 +314,15 @@ prints the API key secret in plain text.
   `soda-mcp` registration.
 - **Rotating an API key** — re-run the installer with the new key. It replaces
   the existing `soda-mcp` registration.
+- **Windows: "this Windows release is not supported"** — the floor is Windows 11
+  23H2 (build 22631) or Windows Server 2022 (build 20348). See
+  `SODA_INSTALL_ALLOW_UNSUPPORTED_OS`.
+- **Windows: "no working 'python'"** — `python` is the Microsoft Store stub or
+  missing. Install Python and disable the app execution aliases (see
+  [Install on Windows](#install-on-windows)).
+- **Windows: certificate or TLS errors from uv behind a corporate proxy** —
+  the installer already sets `UV_NATIVE_TLS`. If the download still fails,
+  the proxy's root CA is not in the Windows certificate store; ask IT.
+- **Windows: the follow-up picker never appears after `/rca`** — the Stop hook's
+  interpreter path is stale (Python moved or was upgraded). Re-run the
+  installer.
