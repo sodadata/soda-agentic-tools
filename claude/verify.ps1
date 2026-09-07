@@ -20,9 +20,10 @@ $script:failures = 0
 function Pass([string]$Text) { Write-Host "PASS  $Text" }
 function Failed([string]$Text) { Write-Host "FAIL  $Text" -ForegroundColor Red; $script:failures++ }
 function Check([bool]$Condition, [string]$Text) { if ($Condition) { Pass $Text } else { Failed $Text } }
+# stdout only: PowerShell 5.1 renders a merged stderr line as "x.exe : <text>".
 function Capture([string]$Exe, [string[]]$Arguments) {
     $ErrorActionPreference = 'Continue'
-    $text = (& $Exe @Arguments 2>&1 | Out-String)
+    $text = (& $Exe @Arguments 2>$null | Out-String)
     return @{ Code = $LASTEXITCODE; Text = $text }
 }
 

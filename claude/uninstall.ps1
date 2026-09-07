@@ -21,15 +21,18 @@ function RunQuiet([string]$Exe, [string[]]$Arguments) {
     & $Exe @Arguments 2>&1 | Out-Null
     return $LASTEXITCODE
 }
+# stdout only: Windows PowerShell 5.1 renders a merged stderr line as
+# "uv.exe : <text>", which then corrupts whatever the caller parses.
 function Capture([string]$Exe, [string[]]$Arguments) {
     $ErrorActionPreference = 'Continue'
-    $text = (& $Exe @Arguments 2>&1 | Out-String)
+    $text = (& $Exe @Arguments 2>$null | Out-String)
     if ($LASTEXITCODE -ne 0) { return $null }
     return $text.Trim()
 }
 function Have([string]$Name) { return [bool](Get-Command $Name -ErrorAction SilentlyContinue) }
 
 function Main {
+    $ErrorActionPreference = 'Stop'   # cmdlet failures abort; native helpers run under 'Continue'
     $interactive = (-not $env:SODA_UNINSTALL_NONINTERACTIVE) -and (-not $env:CLAUDECODE) -and
                    (-not $env:CI) -and [Environment]::UserInteractive
 

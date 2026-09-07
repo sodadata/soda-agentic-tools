@@ -56,15 +56,22 @@ function RunQuiet([string]$Exe, [string[]]$Arguments) {
     & $Exe @Arguments 2>&1 | Out-Null
     return $LASTEXITCODE
 }
+# stdout only: Windows PowerShell 5.1 renders a merged stderr line as
+# "uv.exe : <text>", which then corrupts whatever the caller parses.
 function Capture([string]$Exe, [string[]]$Arguments) {
     $ErrorActionPreference = 'Continue'
-    $text = (& $Exe @Arguments 2>&1 | Out-String)
+    $text = (& $Exe @Arguments 2>$null | Out-String)
     if ($LASTEXITCODE -ne 0) { return $null }
     return $text.Trim()
 }
 function Have([string]$Name) { return [bool](Get-Command $Name -ErrorAction SilentlyContinue) }
 
 function Main {
+    # Cmdlet failures (a bad path, an unreadable file) abort at once instead of
+    # carrying an empty value forward. Native commands are unaffected: the
+    # helpers above run them under a local 'Continue'.
+    $ErrorActionPreference = 'Stop'
+
     # Interactive = a real console, not inside a Claude Code tool call
     # (CLAUDECODE is set there), not CI, and not explicitly overridden.
     $interactive = (-not $env:SODA_INSTALL_NONINTERACTIVE) -and (-not $env:CLAUDECODE) -and
@@ -126,7 +133,8 @@ function Main {
     }
     $uvVersion = (Capture uv @('--version'))
     $claudeVersion = (Capture claude @('--version'))
-    $pythonVersion = (Capture python @('-c', 'import sys; print("%d.%d.%d" % sys.version_info[:3])'))
+    # No double quotes inside native arguments: PowerShell 5.1 mangles them.
+    $pythonVersion = (Capture python @('-c', 'import platform; print(platform.python_version())'))
     Say "   OK: $uvVersion, claude $claudeVersion, python $pythonVersion"
 
     $auth = Capture claude @('auth', 'status')
