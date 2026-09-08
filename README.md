@@ -27,11 +27,12 @@ purpose so you can audit them before running them.
   | macOS | 13 or later | `install.sh` |
   | Linux | Ubuntu 20.04+, Debian 10+, RHEL 8+ | `install.sh` |
   | Windows, inside WSL 2 | Windows 11 23H2 or later | `install.sh`, run in the WSL distribution |
-  | Windows, native | Windows 11 23H2 or later, Windows Server 2022 or later; x64 or ARM64 | `install.ps1` — see [Install on Windows](#install-on-windows) |
+  | Windows, native | Windows 11 23H2 or later, ARM64 | `install.ps1` — see [Install on Windows](#install-on-windows) |
 
-  Windows 10 is out of Microsoft support and is not supported. Under
-  Extended Security Updates the installer can be forced with
-  `SODA_INSTALL_ALLOW_UNSUPPORTED_OS=1`, on request and at your own risk.
+  On x64 Windows, use WSL 2 for now. Windows 10 is out of Microsoft support
+  and is not supported. Under Extended Security Updates the installer can be
+  forced with `SODA_INSTALL_ALLOW_UNSUPPORTED_OS=1`, on request and at your
+  own risk.
 
 ## Feature flag
 
@@ -86,7 +87,7 @@ Two ways to run Claude Code on Windows, and the plugin follows Claude Code:
   it is the rehearsed path, and the only one where Claude Code's sandboxing
   works.
 - **Native Windows** — the PowerShell installer below. Windows 11 23H2 or
-  later, or Windows Server 2022 or later, on x64 or ARM64.
+  later, on ARM64. On x64, use WSL 2 for now.
 
 Native prerequisites, on top of the list above:
 
@@ -305,7 +306,9 @@ published wheel.
 
 Hosted runners are Windows Server images with an unrestricted user, so
 Windows 11 client behaviour (Store aliases, AppLocker, managed policies) and
-proxies still need a manual run on a Windows 11 VM.
+proxies still need a manual run on a Windows 11 VM. x64 and Windows Server are
+exercised only by this workflow, which has not run yet: until it is green, the
+platform table above claims only what was verified by hand, Windows 11 on ARM64.
 
 ## Troubleshooting
 
@@ -320,7 +323,7 @@ proxies still need a manual run on a Windows 11 VM.
 - **Rotating an API key** — re-run the installer with the new key. It replaces
   the existing `soda-mcp` registration.
 - **Windows: "this Windows release is not supported"** — the floor is Windows 11
-  23H2 (build 22631) or Windows Server 2022 (build 20348). See
+  23H2 (build 22631). See
   `SODA_INSTALL_ALLOW_UNSUPPORTED_OS`.
 - **Windows: "no working 'python'"** — `python` is the Microsoft Store stub or
   missing. Install Python and disable the app execution aliases (see
