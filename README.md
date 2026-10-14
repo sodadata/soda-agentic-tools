@@ -1,7 +1,9 @@
 # Soda plugin for Claude Code
 
 Installs the **Soda plugin** for [Claude Code](https://claude.com/claude-code) —
-today the skills for root-cause analysis of data quality incidents (`/rca`) — together with the
+today the skills for root-cause analysis of data quality incidents (`/rca`),
+incident creation (`/create-incident`) and sorting failing checks into incidents
+by root cause (`/update-incidents`) — together with the
 [`soda-mcp`](https://github.com/sodadata/soda-mcp) server. Both come from Soda's
 private package index, entitled by your Soda Cloud API key.
 
@@ -33,10 +35,15 @@ purpose so you can audit them before running them.
   Extended Security Updates the installer can be forced with
   `SODA_INSTALL_ALLOW_UNSUPPORTED_OS=1`, on request and at your own risk.
 
-## Feature flag
+## Feature flags
 
-For now, you will need to enable the feature flag `incidentRcaReportEnabled` 
-in your organization settings on Soda Cloud.
+The incident steps need feature flags that Soda switches on per organization.
+Ask [support@soda.io](mailto:support@soda.io) to enable them:
+
+- `incidentRcaReportEnabled` — publishing the RCA report onto an incident
+  (`/create-incident`, `/update-incidents`)
+- `incidentMultiCheckEnabled` — linking check results to an existing incident
+  (`/update-incidents`)
 
 ## Install
 
@@ -76,6 +83,28 @@ Ideally, add following MCP connection in your Claude Code for an effective RCA:
 
 Once that is done, just copy a link of the failing check and paste it in a Claude Code session.  
 It will find out it's a failing check and start the RCA skill.
+
+## Usage of update-incidents
+
+When several checks fail, run this in a Claude Code session, with the data
+sources to cover:
+
+```
+/update-incidents <data-source-name>
+```
+
+It takes the failing contract checks of those data sources that no open
+incident accounts for yet, and sorts them by root cause. A failure whose cause
+already has an open incident is linked to that incident; each new cause gets a
+new incident with an RCA report. It shows every change in one proposal and
+writes nothing before you approve it.
+
+- Without a data source name, it recommends a scope and asks for one.
+- `SODA_INCIDENTS_SCOPE` (comma-separated data source names) in the
+  environment Claude Code starts in pins the scope for the session: a run can
+  narrow it, never widen it.
+- It investigates with the same MCP connections as the RCA.
+- Claude Code never starts it on its own: it runs only when you type it.
 
 ## Install on Windows
 
@@ -180,8 +209,8 @@ and your shell profile is not modified.
 
 **Your credentials are never written to a file by this script.** They end up in
 exactly one place: the `env` block of the `soda-mcp` entry in your Claude Code
-config. The `/create-incident` skill reads them back from there, so there is a
-single copy to rotate or revoke.
+config. The `/create-incident` and `/update-incidents` skills read them back
+from there, so there is a single copy to rotate or revoke.
 
 Restart Claude Code afterwards — skills load at session start.
 
@@ -196,10 +225,12 @@ claude
 Then, inside the session:
 
 - **`/plugin`** — opens the plugin manager. `soda` should be listed as
-  installed and enabled, carrying the `rca` and `create-incident` skills.
+  installed and enabled, carrying the `rca`, `create-incident` and
+  `update-incidents` skills.
 - **`/mcp`** — lists the MCP servers. `soda-mcp` should show as connected.
 
-The skills themselves are then available as `/rca` and `/create-incident`.
+The skills themselves are then available as `/rca`, `/create-incident` and
+`/update-incidents`.
 
 ## Update
 
@@ -312,11 +343,13 @@ proxies still need a manual run on a Windows 11 VM.
 - **`401`/`403` or a resolution error from the index** — the API key is revoked
   or not entitled, or `SODA_PYPI_INDEX` is wrong for your license and region.
   Verify the key in Soda Cloud and check the table above.
-- **`/rca` or `/create-incident` not available** — restart Claude Code; skills
-  load at session start.
-- **`/create-incident` reports that soda-mcp is not registered** — re-run the
-  installer, then restart Claude Code. That skill reads its credentials from the
-  `soda-mcp` registration.
+- **`/rca`, `/create-incident` or `/update-incidents` not available** — restart
+  Claude Code; skills load at session start.
+- **`/create-incident` or `/update-incidents` reports that soda-mcp is not
+  registered** — re-run the installer, then restart Claude Code. Those skills
+  read their credentials from the `soda-mcp` registration.
+- **`/create-incident` or `/update-incidents` reports that a feature flag is
+  off** — see [Feature flags](#feature-flags).
 - **Rotating an API key** — re-run the installer with the new key. It replaces
   the existing `soda-mcp` registration.
 - **Windows: "this Windows release is not supported"** — the floor is Windows 11

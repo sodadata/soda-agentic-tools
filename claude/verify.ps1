@@ -84,7 +84,8 @@ Check (Test-Path $versionFile)                                         "plugin t
 $version = if (Test-Path $versionFile) { (Get-Content $versionFile -Raw).Trim() } else { '' }
 Write-Host "      version $version"
 $tree = Join-Path $pluginDir 'plugins/soda'
-foreach ($rel in 'skills/rca/SKILL.md', 'skills/create-incident/SKILL.md', 'hooks/hooks.json',
+foreach ($rel in 'skills/rca/SKILL.md', 'skills/create-incident/SKILL.md',
+                 'skills/update-incidents/SKILL.md', 'hooks/hooks.json',
                  'hooks/require_followup_picker.py', 'skills/_lib/soda_public_api.py') {
     Check (Test-Path (Join-Path $tree $rel))                           "tree has $rel"
 }

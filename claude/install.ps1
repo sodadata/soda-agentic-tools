@@ -1,6 +1,7 @@
-# One-line installer for the Soda plugin (Claude Code skills /rca and
-# /create-incident) and the soda-mcp server, for native Windows. The macOS and
-# Linux installer is install.sh next to this file; WSL uses that one.
+# One-line installer for the Soda plugin (Claude Code skills /rca,
+# /create-incident and /update-incidents) and the soda-mcp server, for native
+# Windows. The macOS and Linux installer is install.sh next to this file; WSL
+# uses that one.
 #
 #   $env:SODA_CLOUD_HOST = "cloud.soda.io"
 #   $env:SODA_API_KEY_ID = "<id>"
@@ -196,7 +197,7 @@ function Main {
     Say "                        carrying your Soda Cloud credentials"
     Say "  2. the soda plugin -> $pluginDir"
     Say "                        registered with claude as marketplace 'soda',"
-    Say "                        plugin 'soda@soda' (skills /rca, /create-incident)"
+    Say "                        plugin 'soda@soda' (skills /rca, /create-incident, /update-incidents)"
     Say ""
     Say "  Soda Cloud host    : $cloudHost"
     Say "  Private PyPI index : $index"

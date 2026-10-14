@@ -144,6 +144,8 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           if (-not $env:ANTHROPIC_API_KEY) { throw "ANTHROPIC_API_KEY repository secret is not set" }
+          # update-incidents is left out: it sets disable-model-invocation, so its
+          # description never reaches the session. verify.ps1 checks its files.
           $prompt = 'List the names of the skills provided by the soda plugin, one per line, and nothing else.'
           $json = claude -p $prompt --output-format json --max-turns 2 | Out-String
           if ($LASTEXITCODE -ne 0) { throw "claude -p exited $LASTEXITCODE`n$json" }
