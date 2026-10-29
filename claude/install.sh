@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# One-line installer for the Soda plugin (Claude Code skills /rca and
-# /create-incident) and the soda-mcp server:
+# One-line installer for the Soda plugin (Claude Code skills /rca,
+# /create-incident and /manage-incidents) and the soda-mcp server:
 #
 #   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/sodadata/soda-agentic-tools/main/claude/install.sh)"
 #
@@ -117,7 +117,7 @@ say "                        registered with claude as 'soda-mcp' (user scope),"
 say "                        carrying your Soda Cloud credentials"
 say "  2. the soda plugin -> $PLUGIN_DIR"
 say "                        registered with claude as marketplace 'soda',"
-say "                        plugin 'soda@soda' (skills /rca, /create-incident)"
+say "                        plugin 'soda@soda' (skills /rca, /create-incident, /manage-incidents)"
 say ""
 say "  Soda Cloud host    : $SODA_CLOUD_HOST"
 say "  Private PyPI index : $SODA_PYPI_INDEX"
